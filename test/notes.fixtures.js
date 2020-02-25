@@ -31,16 +31,16 @@ function makeMaliciousNote() {
   const maliciousNote = {
     id: 1,
     name: "<script>alert('xss');</script>",
-    modified: "2018-03-01T00:00:00.000Z",
+    modified: new Date("2018-03-01T00:00:00.000Z"),
     folder_id: 1,
     content: "<script>alert('xss');</script>"
   };
   const expectedNote = {
     id: 1,
-    name: "<script>alert('xss');</script>",
+    name: "&lt;script&gt;alert('xss');&lt;/script&gt;",
     modified: "2018-03-01T00:00:00.000Z",
     folder_id: 1,
-    content: "<script>alert('xss');</script>"
+    content: "&lt;script&gt;alert('xss');&lt;/script&gt;"
   };
   return {
     maliciousNote,
