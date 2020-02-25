@@ -7,6 +7,7 @@ const { NODE_ENV } = require("./config");
 const validateBearerToken = require("./validate-bearer-token");
 const errorHandler = require("./error-handler");
 const foldersRouter = require("./folders/folders-router");
+const notesRouter = require("./notes/notes-router");
 
 // create Express app
 const app = express();
@@ -25,7 +26,9 @@ app.use(cors());
 // authentication middleware
 app.use(validateBearerToken);
 
+// folders and notes endpoints
 app.use("/api/folders", foldersRouter);
+app.use("/api/notes", notesRouter);
 
 // basic endpoint for app.js
 app.get("/", (req, res) => {

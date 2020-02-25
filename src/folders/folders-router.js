@@ -1,6 +1,5 @@
 const path = require("path");
 const express = require("express");
-const { isWebUri } = require("valid-url");
 const xss = require("xss");
 const logger = require("../logger");
 const FoldersService = require("./folders-service");

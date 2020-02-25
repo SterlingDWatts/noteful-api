@@ -1,6 +1,6 @@
 const knex = require("knex");
 const app = require("../src/app");
-const fixtures = require("./folders-fixtures");
+const { makeFoldersArray, makeMaliciousFolder } = require("./folders.fixtures");
 
 describe("Folders Endpoints", function() {
   let db;
@@ -16,15 +16,15 @@ describe("Folders Endpoints", function() {
   after("disconnect from db", () => db.destroy());
 
   before("clean the table", () =>
-    db.raw("TRUNCATE folders, notes RESTART IDENTITY CASCADE")
+    db.raw("TRUNCATE notes, folders RESTART IDENTITY CASCADE")
   );
 
   afterEach("cleanup", () =>
-    db.raw("TRUNCATE folders, notes RESTART IDENTITY CASCADE")
+    db.raw("TRUNCATE notes, folders RESTART IDENTITY CASCADE")
   );
 
   describe(`Unauthorized requests`, () => {
-    const testFolders = fixtures.makeFoldersArray();
+    const testFolders = makeFoldersArray();
 
     beforeEach("insert folders", () => {
       return db.into("folders").insert(testFolders);
@@ -33,6 +33,15 @@ describe("Folders Endpoints", function() {
     it("responds with 401 Unauthorized for GET /api/folders", () => {
       return supertest(app)
         .get("/api/folders")
+        .expect(401, {
+          error: "Unauthorized request"
+        });
+    });
+
+    it("responds with 401 Unauthorized for GET /api/folders/:folder_id", () => {
+      const folderId = 123456;
+      return supertest(app)
+        .get(`/api/folders/${folderId}`)
         .expect(401, {
           error: "Unauthorized request"
         });
@@ -50,7 +59,7 @@ describe("Folders Endpoints", function() {
     });
 
     context(`Given there are folders in the database`, () => {
-      const testFolders = fixtures.makeFoldersArray();
+      const testFolders = makeFoldersArray();
 
       beforeEach("insert folders", () => {
         return db.into("folders").insert(testFolders);
@@ -65,7 +74,7 @@ describe("Folders Endpoints", function() {
     });
 
     context(`Given an XSS attack folder`, () => {
-      const { malicousFolder, expectedFolder } = fixtures.makeMaliciousFolder();
+      const { malicousFolder, expectedFolder } = makeMaliciousFolder();
 
       beforeEach("insert folders", () => {
         return db.into("folders").insert([malicousFolder]);
@@ -92,7 +101,7 @@ describe("Folders Endpoints", function() {
     });
 
     context(`Given there are folders in the database`, () => {
-      const testFolders = fixtures.makeFoldersArray();
+      const testFolders = makeFoldersArray();
 
       beforeEach("insert folders", () => {
         return db.into("folders").insert(testFolders);
@@ -109,7 +118,7 @@ describe("Folders Endpoints", function() {
     });
 
     context(`Given an XSS attack folder`, () => {
-      const { malicousFolder, expectedFolder } = fixtures.makeMaliciousFolder();
+      const { malicousFolder, expectedFolder } = makeMaliciousFolder();
 
       beforeEach("insert malicous folder", () => {
         return db.into("folders").insert([malicousFolder]);
@@ -154,10 +163,7 @@ describe("Folders Endpoints", function() {
 
     context("Given an XSS attack folder", () => {
       it("removes XSS attack content from response", () => {
-        const {
-          malicousFolder,
-          expectedFolder
-        } = fixtures.makeMaliciousFolder();
+        const { malicousFolder, expectedFolder } = makeMaliciousFolder();
         return supertest(app)
           .post("/api/folders")
           .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
@@ -182,7 +188,7 @@ describe("Folders Endpoints", function() {
     });
 
     context(`Given there are folders in the database`, () => {
-      const testFolders = fixtures.makeFoldersArray();
+      const testFolders = makeFoldersArray();
 
       beforeEach("insert folders", () => {
         return db.into("folders").insert(testFolders);
@@ -220,7 +226,7 @@ describe("Folders Endpoints", function() {
     });
 
     context(`Given there are folders in the database`, () => {
-      const testFolders = fixtures.makeFoldersArray();
+      const testFolders = makeFoldersArray();
 
       beforeEach("insert folderrs", () => {
         return db.into("folders").insert(testFolders);
