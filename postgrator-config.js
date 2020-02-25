@@ -1,4 +1,4 @@
-require("dotenv").congig();
+require("dotenv").config();
 
 module.exports = {
   migrationsDirectory: "migrations",

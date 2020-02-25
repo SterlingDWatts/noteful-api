@@ -6,6 +6,7 @@ const cors = require("cors");
 const { NODE_ENV } = require("./config");
 const validateBearerToken = require("./validate-bearer-token");
 const errorHandler = require("./error-handler");
+const foldersRouter = require("./folders/folders-router");
 
 // create Express app
 const app = express();
@@ -23,6 +24,8 @@ app.use(cors());
 
 // authentication middleware
 app.use(validateBearerToken);
+
+app.use("/api/folders", foldersRouter);
 
 // basic endpoint for app.js
 app.get("/", (req, res) => {
