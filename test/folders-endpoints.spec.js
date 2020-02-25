@@ -205,4 +205,58 @@ describe("Folders Endpoints", function() {
       });
     });
   });
+
+  describe(`PATCH /api/folders/:folder_id`, () => {
+    context(`Given there are no folders`, () => {
+      it("responds with 404", () => {
+        const folderId = 123456;
+        return supertest(app)
+          .patch(`/api/folders/${folderId}`)
+          .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
+          .expect(404, {
+            error: { message: "Folder Not Found" }
+          });
+      });
+    });
+
+    context(`Given there are folders in the database`, () => {
+      const testFolders = fixtures.makeFoldersArray();
+
+      beforeEach("insert folderrs", () => {
+        return db.into("folders").insert(testFolders);
+      });
+
+      it("responds with 204 and updates the folder", () => {
+        const idToUpdate = 1;
+        const updateFolder = {
+          name: "New Folder Name!"
+        };
+        const expectedFolder = {
+          ...testFolders[idToUpdate - 1],
+          ...updateFolder
+        };
+        return supertest(app)
+          .patch(`/api/folders/${idToUpdate}`)
+          .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
+          .send(updateFolder)
+          .expect(204);
+      });
+
+      it("responds with 400 when no required fields are supplied", () => {
+        const idToUpdate = 1;
+        const updateFolder = {
+          words: "This isn't a category"
+        };
+        return supertest(app)
+          .patch(`/api/folders/${idToUpdate}`)
+          .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
+          .send(updateFolder)
+          .expect(400, {
+            error: {
+              message: "Request body must contain 'name'"
+            }
+          });
+      });
+    });
+  });
 });
