@@ -16,6 +16,11 @@ const NotesService = {
       .then(rows => {
         return rows[0];
       });
+  },
+  deleteNote(knex, id) {
+    return knex("notes")
+      .where({ id })
+      .delete();
   }
 };
 

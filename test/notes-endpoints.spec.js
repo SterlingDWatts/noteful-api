@@ -187,5 +187,89 @@ describe(`Notes endpoints`, () => {
           expect(res.headers.location).to.eql(`/api/notes/${res.body.id}`);
         });
     });
+
+    const requiredFields = ["name", "folder_id", "content"];
+
+    requiredFields.forEach(field => {
+      const newNote = {
+        name: "This is another new note",
+        folder_id: 1,
+        content: "This is the content for the new, new note"
+      };
+
+      it(`responds with 400 and an error message when the '${field}' is missing`, () => {
+        delete newNote[field];
+
+        return supertest(app)
+          .post("/api/notes")
+          .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
+          .send(newNote)
+          .expect(400, {
+            error: { message: `Missing '${field}' in request body` }
+          });
+      });
+    });
+
+    it("removes XSS attack content from response", () => {
+      const { maliciousNote, expectedNote } = makeMaliciousNote();
+      return supertest(app)
+        .post("/api/notes")
+        .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
+        .send(maliciousNote)
+        .expect(201)
+        .expect(res => {
+          expect(res.body.name).to.eql(expectedNote.name);
+          expect(res.body.content).to.eql(expectedNote.content);
+        });
+    });
+  });
+
+  describe.only(`DELETE /api/notes/:note_id`, () => {
+    context(`Given no notes`, () => {
+      it("responds with 404", () => {
+        const noteId = 123456;
+        return supertest(app)
+          .delete(`/api/notes/${noteId}`)
+          .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
+          .expect(404, {
+            error: { message: "Note Not Found" }
+          });
+      });
+    });
+
+    context(`Given there are notes in the database`, () => {
+      const testFolders = makeFoldersArray();
+      const testNotes = makeNotesArray();
+
+      beforeEach("insert notes", () => {
+        const testNotesNewDates = testNotes.map(note => {
+          return {
+            ...note,
+            modified: new Date(note.modified)
+          };
+        });
+        return db
+          .into("folders")
+          .insert(testFolders)
+          .then(() => {
+            return db.into("notes").insert(testNotesNewDates);
+          });
+      });
+
+      it("responds with 204 and removes the note", () => {
+        const idToRemove = 2;
+        const expectedNotes = testNotes.filter(note => note.id !== idToRemove);
+        return supertest(app)
+          .delete(`/api/notes/${idToRemove}`)
+          .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
+          .expect(204)
+          .then(res =>
+            supertest(app)
+              .get("/api/notes")
+              .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
+              .expect(expectedNotes)
+          );
+      });
+    });
   });
 });

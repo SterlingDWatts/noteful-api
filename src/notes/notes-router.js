@@ -28,6 +28,14 @@ notesRouter
     const { name, folder_id, content } = req.body;
     const newNote = { name, folder_id, content };
 
+    for (const [key, value] of Object.entries(newNote)) {
+      if (value == null) {
+        return res.status(400).json({
+          error: { message: `Missing '${key}' in request body` }
+        });
+      }
+    }
+
     NotesService.insertNote(req.app.get("db"), newNote)
       .then(note => {
         res
@@ -57,6 +65,11 @@ notesRouter
   })
   .get((req, res, next) => {
     res.json(serializeNote(res.note));
+  })
+  .delete((req, res, next) => {
+    NotesService.deleteNote(req.app.get("db"), req.params.note_id).then(() => {
+      res.status(204).end();
+    });
   });
 
 module.exports = notesRouter;
