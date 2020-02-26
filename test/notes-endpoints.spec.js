@@ -224,7 +224,7 @@ describe(`Notes endpoints`, () => {
     });
   });
 
-  describe.only(`DELETE /api/notes/:note_id`, () => {
+  describe(`DELETE /api/notes/:note_id`, () => {
     context(`Given no notes`, () => {
       it("responds with 404", () => {
         const noteId = 123456;
@@ -269,6 +269,92 @@ describe(`Notes endpoints`, () => {
               .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
               .expect(expectedNotes)
           );
+      });
+    });
+  });
+
+  describe(`PATCH /api/notes/:note_id`, () => {
+    context(`Given there are no notes`, () => {
+      it("responds with 404", () => {
+        const idToPatch = 123456;
+        return supertest(app)
+          .patch(`/api/notes/${idToPatch}`)
+          .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
+          .expect(404, {
+            error: { message: "Note Not Found" }
+          });
+      });
+    });
+
+    context(`Given there are notes in the databse`, () => {
+      const testFolders = makeFoldersArray();
+      const testNotes = makeNotesArray();
+
+      beforeEach("insert notes", () => {
+        const testNotesFixedDates = testNotes.map(note => {
+          return {
+            ...note,
+            modified: new Date(note.modified)
+          };
+        });
+        return db
+          .into("folders")
+          .insert(testFolders)
+          .then(() => {
+            return db.into("notes").insert(testNotesFixedDates);
+          });
+      });
+
+      it("responds with 204 and updates the note", () => {
+        const idToPatch = 1;
+        const updateNote = {
+          name: "This is the updated name",
+          content: "This is the updated content"
+        };
+        const expectedNote = {
+          ...testNotes[idToPatch - 1],
+          ...updateNote
+        };
+        return supertest(app)
+          .patch(`/api/notes/${idToPatch}`)
+          .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
+          .send(updateNote)
+          .expect(204);
+      });
+
+      it("responds with 400 when no required fields are supplied", () => {
+        const idToUpdate = 2;
+        return supertest(app)
+          .patch(`/api/notes/${idToUpdate}`)
+          .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
+          .send({ irreleventField: "We don't need this field" })
+          .expect(400, {
+            error: {
+              message: "Request body must contain either 'name' or 'content'"
+            }
+          });
+      });
+
+      it("responds with 204 when updating only a subset of fields", () => {
+        const idToUpdate = 2;
+        const updateNote = {
+          name: "We are just updating the name"
+        };
+        const expectedNote = {
+          ...testNotes[idToUpdate - 1],
+          updateNote
+        };
+        return supertest(app)
+          .patch(`/api/notes/${idToUpdate}`)
+          .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
+          .send(updateNote)
+          .expect(204)
+          .then(res => {
+            supertest(app)
+              .get(`/api/notes/${idToUpdate}`)
+              .set("Authorization", `Bearer ${process.env.API_TOKEN}`)
+              .expect(expectedNote);
+          });
       });
     });
   });
